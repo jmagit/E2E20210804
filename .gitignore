@@ -33,3 +33,6 @@
 npm-debug.log
 testem.log
 /typings
+
+#cypress
+debug.log

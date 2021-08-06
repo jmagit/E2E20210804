@@ -4,7 +4,9 @@ describe('Pagina Inicio Test', () => {
     function menu(menu, url, title) {
         cy.visit('/')
         cy.get('.nav-link').contains(menu).click()
-        cy.url().should('include', url)
+        cy.location().should((location) => {
+            expect(location.pathname).to.eq(url)
+          })
         if (title)
             cy.get('h1').contains(title)
     }
