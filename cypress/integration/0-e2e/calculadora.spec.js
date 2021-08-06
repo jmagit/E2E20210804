@@ -1,6 +1,9 @@
 describe('Calculadora Test', () => {
+    beforeEach(() => {
+        cy.visit('/calculadora')
+        cy.title().should('include', 'Calculadora')
+    })
     it('Abrir Calculadora desde el menu', () => {
-        cy.visit('http://localhost:8181/')
         cy.get('.nav-link').contains('Calculadora').click()
         cy.get('h1').contains('Calculadora')
     })
