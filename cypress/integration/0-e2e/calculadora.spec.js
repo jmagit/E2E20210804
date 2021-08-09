@@ -7,7 +7,7 @@ describe('Calculadora Test', () => {
         cy.get('.nav-link').contains('Calculadora').click()
         cy.get('h1').contains('Calculadora')
     })
-    it.only('Abrir Calculadora desde la tarjeta', () => {
+    it('Abrir Calculadora desde la tarjeta', () => {
         cy.visit('http://localhost:8181/')
         // cy.get('.card').contains('Calculadora').parent().parent()
         //     .contains('Ver mas').click()
