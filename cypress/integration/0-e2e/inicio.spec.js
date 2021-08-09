@@ -1,4 +1,4 @@
-import { po } from './po'
+import { po } from '../../support/po'
 
 describe('Pagina Inicio Test', () => {
     function menu(menu, url, title) {
