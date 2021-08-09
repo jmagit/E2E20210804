@@ -2,13 +2,17 @@
   "name": "web4testing",
   "version": "0.0.0",
   "private": true,
-  "scripts": {
-    "start": "node ./bin/www",
-    "restart ": "nodemon -w **/*.* -e js,pug ./bin/www",
-    "test": "nodemon -w **/*.* -e js,pug ./bin/www",
-    "e2e": "cypress open",
-    "ci": "cypress run"
-  },
+"scripts": {
+  "start": "node ./bin/www",
+  "restart ": "nodemon -w **/*.* -e js,pug ./bin/www",
+  "test": "nodemon -w **/*.* -e js,pug ./bin/www",
+  "e2e": "cypress open",
+  "combine-reports": "mochawesome-merge cypress/reports/mocha*.json > cypress/reports/index.json",
+  "generate-report": "marge --autoOpen --charts true --reportDir ./cypress/reports/ --reportFilename index ./cypress/reports/index.json",
+  "preci": "node cypress/support/deleteReports.js",
+  "postci": "npm run combine-reports && npm run generate-report",
+  "ci": "cypress run"
+},
   "dependencies": {
     "cookie-parser": "~1.4.5",
     "debug": "~4.3.2",
@@ -22,7 +26,12 @@
   },
   "devDependencies": {
     "cypress": "^8.1.0",
-    "eslint-plugin-cypress": "^2.11.3"
+    "eslint-plugin-cypress": "^2.11.3",
+    "mocha-junit-reporter": "^2.0.0",
+    "mocha-multi-reporters": "^1.5.1",
+    "mochawesome": "^6.2.2",
+    "mochawesome-merge": "^4.2.0",
+    "mochawesome-report-generator": "^5.2.0"
   },
   "eslintConfig": {
     "extends": [

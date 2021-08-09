@@ -1,7 +1,5 @@
 /// <reference types="Cypress" />
 
-import cypress = require('cypress')
-
 describe('Ejemplos iniciales', () => {
   describe('Basico', () => {
     it('Este pasa siempre', () => {
