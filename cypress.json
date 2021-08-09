@@ -1,5 +1,16 @@
 {
     "baseUrl": "http://localhost:8181",
     "testFiles": "**/*.spec.js",
-    "$schema": "https://on.cypress.io/cypress.schema.json"
+    "$schema": "https://on.cypress.io/cypress.schema.json",
+    "video": false,
+    "reporter": "mochawesome",
+    "reporterOptions": {
+        "reportDir": "cypress/reports",
+        "overwrite": false,
+        "html": false,
+        "json": true
+    },
+    "ignoreTestFiles": [
+        "**/2-advanced-examples/*"
+    ]
 }
