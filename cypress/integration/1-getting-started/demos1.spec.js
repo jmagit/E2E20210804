@@ -1,4 +1,5 @@
 /// <reference types="Cypress" />
+/// <reference types="../../support" />
 
 describe('Ejemplos iniciales', () => {
   describe('Basico', () => {
@@ -40,7 +41,7 @@ describe('Ejemplos iniciales', () => {
       })
     )
   })
-  describe.only('Ejemplos de depuración', () => {
+  describe('Ejemplos de depuración', () => {
     xit('Para para depurar', () => {
       cy.visit('/calculadora')
       cy.get('h1')
@@ -61,6 +62,27 @@ describe('Ejemplos iniciales', () => {
       cy.log('Esto es un mensaje forzado')
     })
   })
+  describe.only('Comandos', () => {
+    xit('Comandos principal', () => {
+      cy.visit('/')
+      cy.clickLink('Hacer calculos')
+      cy.clickDigito(1).console('info').click()
+    })
+    xit('Comandos secundarios', () => {
+      cy.visit('/alertas')
+      cy.get('[data-target="#staticBackdrop"]').click()
+      //cy.clickDigito('Close')
+      cy.get('#staticBackdrop > .modal-dialog > .modal-content > .modal-header > .close').console('info').click().trigger('click')
+      // cy.get('button').contains('Close').console('info').trigger('click')
+      // cy.getLink('Hacer calculos').click()
+    })
+    it('Comandos sobreescritos', () => {
+      cy.visit('/')
+      cy.get('#txtUsuario').type('admin')
+      cy.get('#txtPassword').type('P@$$w0rd', { sensitive: true })
+    })
+  })
+
   xcontext('Window', () => {
     beforeEach(() => {
       cy.visit('https://example.cypress.io/commands/window')
