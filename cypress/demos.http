@@ -54,3 +54,7 @@ Content-Type: application/json
   "id": 0,
   "nombre": "0123"
 }
+
+###
+
+get http://localhost:8181/api/contactos?_page=count&_rows=6

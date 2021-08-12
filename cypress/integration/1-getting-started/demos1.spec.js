@@ -40,6 +40,28 @@ describe('Ejemplos iniciales', () => {
         })
       })
     )
+    it('Etiquetas contenidas', () => {
+      cy.visit('/')
+      cy.get('.card>.card-body>.card-title').contains('Contactos')
+        .closest('.card').within(() => {
+          cy.contains('Ver mas').click()
+        })
+    })
+    it('Selectores', () => {
+      cy.visit('/').as('pag')
+      cy.get('.nav-link').first().contains('Inicio')
+      cy.get('.nav-link').eq(1).contains('Calculadora')
+      cy.get('.nav-link').last().children(0).should('to.have.class', 'fa-info-circle')
+      cy.get('.navbar-nav').find('.active').contains('Inicio')
+      cy.get('.navbar-nav').find('.active').next().contains('Calculadora')
+      cy.get('.navbar-nav').find('.active').nextAll().should('have.length', 7)
+      cy.get('.navbar-nav').find('.active').siblings().last().find('.fa-info-circle')
+      cy.get('.navbar-nav').find('.active').siblings().last().prev().contains('APIs')
+      cy.get('.navbar-nav').find('.active').parent().should('to.have.class', 'mr-auto')
+      cy.get('img').first().should('to.have.attr', 'alt', 'Calculadora')
+      cy.get('img').last().should('to.have.attr', 'alt', 'Alertas')
+      cy.get('img').eq(2).should('to.have.attr', 'alt', 'Contactos')
+    })
   })
   describe('Ejemplos de depuración', () => {
     xit('Para para depurar', () => {
@@ -82,27 +104,15 @@ describe('Ejemplos iniciales', () => {
       cy.get('#txtPassword').type('P@$$w0rd', { sensitive: true })
     })
   })
-  describe.only('Solicitudes de red', () => {
+  describe('Solicitudes de red', () => {
     context('Spies', () => {
       it('Espiar una solicitud', () => {
         cy.intercept('GET', 'api/peliculas?_sort=titulo').as('getRest')
         cy.visit('/compras')
-        expect('s').not.eq('')
-        //expect([{a: 1, b: 2, c: 3}]).to.include({a: 1, b: 2}); 
-        //expect([{a: 1, b: 2}]).to.be.an('array').that.any.include.property('a', 1);       
-        // expect([{a: 1, b: 2}]).any.include({a: 1});       
         cy.wait('@getRest').its('response.statusCode').should('be.oneOf', [200, 304])
         cy.get('@getRest').its('response.body').console('info')
           .should('lengthOf', 100)
-        // .its('length')
-        // .should('eq', 100)
-        //.should('to.deep.include', JSON.stringify({titulo: "3 Godfathers"}))
-        // .debug()
-        // .should(
-        //   'deep.equal',
-        //   JSON.stringify({titulo: "3 Godfathers"})
-        //   // JSON.stringify({id: 90, titulo: "3 Godfathers", director: "Zach Beincken", duración: 127, genero: "Drama|Western"})
-        // )
+        cy.get('#filtroResult').children('li').should('lengthOf', 100)
       })
       it('Espiar una solicitud, no cache', () => {
         cy.intercept('api/peliculas?_sort=titulo',
@@ -119,8 +129,17 @@ describe('Ejemplos iniciales', () => {
         ).as('getRest')
         cy.visit('/compras')
         cy.wait('@getRest').its('response.statusCode').should('be.oneOf', [200, 304])
-        cy.get('@getRest').its('response.body').console('info')
-          .should('lengthOf', 100)
+        cy.get('@getRest').its('response.body').then((listado) => {
+          cy.get('#filtroResult > li > h6')
+            .should('lengthOf', listado.length)
+            // .debug()
+            .then((listItems) => {
+              listItems.toArray().forEach((item, index) => {
+                cy.wrap(item).should('include.text', listado[index].titulo)
+                //expect(item).include.text(listado[index].titulo)
+              })
+            })
+        })
       })
       function añadirContacto() {
         cy.visit('/contactos')
@@ -176,14 +195,14 @@ describe('Ejemplos iniciales', () => {
         { "id": 99, "titulo": "Innocent Affair, An (Don't Trust Your Husband) (Under Suspicion)", "director": "Dorine Haverty", "duración": 99, "genero": "Comedy", "idioma": "French", "precio": 9.95, "año": 2001 },
         { "id": 100, "titulo": "Damn the Defiant! (H.M.S. Defiant)", "director": "Hillary Baudi", "duración": 151, "genero": "Adventure|Drama", "idioma": "Italian", "precio": 20, "año": 2006 }
       ]
-      it.only('Reemplace OK direct', () => {
+      it('Reemplace OK direct', () => {
         cy.intercept('GET', 'api/peliculas?_sort=titulo', listado).as('getRest')
         cy.visit('/compras')
         cy.wait('@getRest').its('response.statusCode').should('be.equal', 200)
         cy.get('@getRest').its('response.body').should('lengthOf', 3)
         cy.get('#filtroResult').children('li').should('have.length', 3)
       })
-      it.only('Reemplace OK details', () => {
+      it('Reemplace OK details', () => {
         cy.intercept('GET', 'api/peliculas?_sort=titulo', {
           statusCode: 200,
           headers: { 'Content-Type': 'application/json' },
@@ -233,46 +252,30 @@ describe('Ejemplos iniciales', () => {
         cy.wait('@getRest').should('have.property', 'error')
         cy.get('#CuadroAlerta').should('be.visible').should('include.text', 'Failed to fetch')
       })
-
-    })
-  })
-  xcontext('Window', () => {
-    beforeEach(() => {
-      cy.visit('https://example.cypress.io/commands/window')
-    })
-
-    it('cy.window() - get the global window object', () => {
-      cy.window().should('have.property', 'top')
-    })
-
-    it('cy.document() - get the document object', () => {
-      cy.document().should('have.property', 'charset').and('eq', 'UTF-8')
-    })
-
-    it('cy.title() - get the title', () => {
-      cy.title().should('include', 'Kitchen Sink')
-    })
-  })
-  xcontext('Network Requests', () => {
-    beforeEach(() => {
-      cy.visit('https://example.cypress.io/commands/network-requests')
-    })
-
-    // Manage HTTP requests in your app
-
-    it('cy.request() - make an XHR request', () => {
-      // https://on.cypress.io/request
-      cy.request('https://jsonplaceholder.cypress.io/comments')
-        .should((response) => {
-          expect(response.status).to.eq(200)
-          // the server sometimes gets an extra comment posted from another machine
-          // which gets returned as 1 extra object
-          expect(response.body).to.have.property('length').and.be.oneOf([500, 501])
-          expect(response).to.have.property('headers')
-          expect(response).to.have.property('duration')
+      describe.skip('Cachear servicio REST como fixture', () => {
+        before(() => {
+          cy.request('api/contactos?_sort=nombre,apellidos&_projection=id,tratamiento,nombre,apellidos,avatar,telefono,email')
+            .then((response) => {
+              cy.writeFile('cypress/fixtures/contactos.json', response.body.slice(0, 20))
+            })
         })
+        it.only('Comprobar cache', () => {
+          cy.readFile('cypress/fixtures/contactos.json').then((lst) => expect(lst.length).eq(20))
+        })
+        it('Agilizar lecturas repetidas', () => {
+          cy.intercept('GET', 'api/contactos?_sort=nombre,apellidos&_projection=id,tratamiento,nombre,apellidos,avatar,telefono,email', { fixture: 'contactos.json' }).as('getRest')
+          cy.visit('/contactos')
+          cy.wait('@getRest').get('.page-link').eq(3).click()
+          //.parent().should('have.class', 'active')
+          cy.get('.pagination').find('.active').next().children(0).click()
+          cy.get('.pagination').find('.active').next().children(0).click()
+        })
+
+      })
+
     })
   })
+
   context('Stubs, Spies and Clock', () => {
     function calc() {
       this.suma = (a, b) => a + b;
