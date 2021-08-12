@@ -1,0 +1,52 @@
+[
+    {
+        "id": 1,
+        "titulo": "Pat Garrett and Billy the Kid",
+        "director": "Johnette Bulle",
+        "duración": 90,
+        "genero": "Western",
+        "idioma": "Spanish",
+        "precio": 9.95,
+        "año": 2003
+    },
+    {
+        "id": 2,
+        "titulo": "Perils of Pauline, The",
+        "director": "Costanza Simoes",
+        "duración": 86,
+        "genero": "Action",
+        "idioma": "Italian",
+        "precio": 18.5,
+        "año": 2001
+    },
+    {
+        "id": 98,
+        "titulo": "Man of the House",
+        "director": "Giacinta Dunklee",
+        "duración": 161,
+        "genero": "Comedy",
+        "idioma": "English",
+        "precio": 20,
+        "año": 1985
+    },
+    {
+        "id": 99,
+        "titulo": "Innocent Affair, An (Don't Trust Your Husband) (Under Suspicion)",
+        "director": "Dorine Haverty",
+        "duración": 99,
+        "genero": "Comedy",
+        "idioma": "French",
+        "precio": 9.95,
+        "año": 2001
+    },
+    {
+        "id": 100,
+        "titulo": "Damn the Defiant! (H.M.S. Defiant)",
+        "director": "Hillary Baudi",
+        "duración": 151,
+        "genero": "Adventure|Drama",
+        "idioma": "Italian",
+        "precio": 20,
+        "año": 2006
+    }
+]
