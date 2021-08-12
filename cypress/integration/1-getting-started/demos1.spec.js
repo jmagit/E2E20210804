@@ -62,7 +62,7 @@ describe('Ejemplos iniciales', () => {
       cy.log('Esto es un mensaje forzado')
     })
   })
-  describe.only('Comandos', () => {
+  describe('Comandos', () => {
     xit('Comandos principal', () => {
       cy.visit('/')
       cy.clickLink('Hacer calculos')
@@ -82,7 +82,160 @@ describe('Ejemplos iniciales', () => {
       cy.get('#txtPassword').type('P@$$w0rd', { sensitive: true })
     })
   })
+  describe.only('Solicitudes de red', () => {
+    context('Spies', () => {
+      it('Espiar una solicitud', () => {
+        cy.intercept('GET', 'api/peliculas?_sort=titulo').as('getRest')
+        cy.visit('/compras')
+        expect('s').not.eq('')
+        //expect([{a: 1, b: 2, c: 3}]).to.include({a: 1, b: 2}); 
+        //expect([{a: 1, b: 2}]).to.be.an('array').that.any.include.property('a', 1);       
+        // expect([{a: 1, b: 2}]).any.include({a: 1});       
+        cy.wait('@getRest').its('response.statusCode').should('be.oneOf', [200, 304])
+        cy.get('@getRest').its('response.body').console('info')
+          .should('lengthOf', 100)
+        // .its('length')
+        // .should('eq', 100)
+        //.should('to.deep.include', JSON.stringify({titulo: "3 Godfathers"}))
+        // .debug()
+        // .should(
+        //   'deep.equal',
+        //   JSON.stringify({titulo: "3 Godfathers"})
+        //   // JSON.stringify({id: 90, titulo: "3 Godfathers", director: "Zach Beincken", duración: 127, genero: "Drama|Western"})
+        // )
+      })
+      it('Espiar una solicitud, no cache', () => {
+        cy.intercept('api/peliculas?_sort=titulo',
+          { method: 'GET', middleware: true },
+          (req) => {
+            req.headers['cache-control'] = 'no-cache,no-store,max-age=0,must-revalidate';
+            req.continue((res) => {
+              expect(res.statusCode).be.oneOf([200, 201, 204, 304])
+            })
+            req.on('before:response', (res) => {
+              res.headers['cache-control'] = 'no-store'
+            })
+          }
+        ).as('getRest')
+        cy.visit('/compras')
+        cy.wait('@getRest').its('response.statusCode').should('be.oneOf', [200, 304])
+        cy.get('@getRest').its('response.body').console('info')
+          .should('lengthOf', 100)
+      })
+      function añadirContacto() {
+        cy.visit('/contactos')
+        cy.get('input[value=Añadir]').click()
+        cy.get('#frmPrincipal').should('be.visible')
+        cy.get('#id').type('0')
+        cy.get('#nombre').type('11111')
+        // cy.get('').type('')
+        // cy.get('').type('')
+        // cy.get('').type('')
+        cy.get('#btnEnviar').click()
+        cy.get('#listado').should('be.visible')
+      }
+      it('Espiar una solicitud POST', () => {
+        cy.login()
+        cy.intercept('POST', 'api/**').as('postREST')
+        añadirContacto()
+        // cy.logout()
+        cy.wait('@postREST').its('response.statusCode').should('eq', 201)
+      })
+      it('Espiar una solicitud POST para borrar', () => {
+        cy.login()
+        cy.intercept('POST', 'api/contactos').as('postREST')
+        añadirContacto()
+        // cy.logout()
+        cy.wait('@postREST').its('response.statusCode').should('eq', 201)
+        cy.get('@postREST').its('response.headers.location').then((s) => {
+          cy.request('DELETE', s).then((response) => {
+            expect(response.status).to.eq(204)
+          })
+        })
+      })
+      it('Suplantar una solicitud POST', () => {
+        cy.login()
+        cy.intercept('api/contactos',
+          { method: 'POST' },
+          (req) => {
+            expect(req.headers).to.have.property('accept')
+            expect(req.body).to.include('11111')
+            req.reply(201, [])
+          }
+        ).as('getRest')
+        añadirContacto()
+        // cy.logout()
+        cy.wait('@getRest').its('response.statusCode').should('eq', 201)
+        // cy.get('@getRest').its('response.body').console('info')
+        //   .should('lengthOf', 100)
+      })
+    })
+    context('Stubs', () => {
+      let listado = [
+        { "id": 98, "titulo": "Man of the House", "director": "Giacinta Dunklee", "duración": 161, "genero": "Comedy", "idioma": "English", "precio": 20, "año": 1985 },
+        { "id": 99, "titulo": "Innocent Affair, An (Don't Trust Your Husband) (Under Suspicion)", "director": "Dorine Haverty", "duración": 99, "genero": "Comedy", "idioma": "French", "precio": 9.95, "año": 2001 },
+        { "id": 100, "titulo": "Damn the Defiant! (H.M.S. Defiant)", "director": "Hillary Baudi", "duración": 151, "genero": "Adventure|Drama", "idioma": "Italian", "precio": 20, "año": 2006 }
+      ]
+      it.only('Reemplace OK direct', () => {
+        cy.intercept('GET', 'api/peliculas?_sort=titulo', listado).as('getRest')
+        cy.visit('/compras')
+        cy.wait('@getRest').its('response.statusCode').should('be.equal', 200)
+        cy.get('@getRest').its('response.body').should('lengthOf', 3)
+        cy.get('#filtroResult').children('li').should('have.length', 3)
+      })
+      it.only('Reemplace OK details', () => {
+        cy.intercept('GET', 'api/peliculas?_sort=titulo', {
+          statusCode: 200,
+          headers: { 'Content-Type': 'application/json' },
+          body: listado
+        }).as('getRest')
+        cy.visit('/compras')
+        cy.wait('@getRest').its('response.statusCode').should('be.equal', 200)
+        cy.get('@getRest').its('response.body').should('lengthOf', 3)
+        cy.get('#filtroResult').children('li').should('have.length', 3)
+      })
+      it('Reemplace OK fixture', () => {
+        cy.intercept('GET', 'api/peliculas?_sort=titulo', { fixture: 'peliculas.json' }).as('getRest')
+        cy.visit('/compras')
+        cy.wait('@getRest').its('response.statusCode').should('be.equal', 200)
+        cy.get('@getRest').its('response.body').should('lengthOf', 5)
+        cy.get('#filtroResult').children('li').should('have.length', 5)
+      })
+      it('Reemplace KO 404 Not Found', () => {
+        cy.intercept('GET', 'api/peliculas?_sort=titulo', {
+          statusCode: 404,
+        }).as('getRest')
+        cy.visit('/compras')
+        cy.wait('@getRest').its('response.statusCode').should('be.equal', 404)
+        cy.get('#CuadroAlerta').should('be.visible').should('include.text', 'Not Found')
+      })
+      it('Reemplace KO 500 Internal Server Error', () => {
+        cy.intercept('GET', 'api/peliculas?_sort=titulo', {
+          statusCode: 500,
+        }).as('getRest')
+        cy.visit('/compras')
+        cy.wait('@getRest').its('response.statusCode').should('be.equal', 500)
+        cy.get('#CuadroAlerta').should('be.visible').should('include.text', 'Internal Server Error')
+      })
+      it('Reemplace KO 200 no body', () => {
+        cy.intercept('GET', 'api/peliculas?_sort=titulo', {
+          statusCode: 200,
+        }).as('getRest')
+        cy.visit('/compras')
+        cy.wait('@getRest').its('response.statusCode').should('be.equal', 200)
+        cy.get('#CuadroAlerta').should('be.visible').should('include.text', 'Unexpected end of JSON input')
+      })
+      it('Reemplace KO Force Network Error', () => {
+        cy.intercept('GET', 'api/peliculas?_sort=titulo', {
+          forceNetworkError: true,
+        }).as('getRest')
+        cy.visit('/compras')
+        cy.wait('@getRest').should('have.property', 'error')
+        cy.get('#CuadroAlerta').should('be.visible').should('include.text', 'Failed to fetch')
+      })
 
+    })
+  })
   xcontext('Window', () => {
     beforeEach(() => {
       cy.visit('https://example.cypress.io/commands/window')
@@ -120,208 +273,182 @@ describe('Ejemplos iniciales', () => {
         })
     })
   })
-
-  xcontext('Spies, Stubs, and Clock', () => {
-    it('cy.spy() - wrap a method in a spy', () => {
-      // https://on.cypress.io/spy
-      cy.visit('https://example.cypress.io/commands/spies-stubs-clocks')
-
-      const obj = {
-        foo() { },
-      }
-
-      const spy = cy.spy(obj, 'foo').as('anyArgs')
-
-      obj.foo()
-
-      expect(spy).to.be.called
+  context('Stubs, Spies and Clock', () => {
+    function calc() {
+      this.suma = (a, b) => a + b;
+    }
+    context('Spies', () => {
+      it('Espiar un metodo', () => {
+        let o = new calc();
+        // let sumaSpy = cy.spy(o, 'suma')
+        let sumaSpy = cy.spy(o)
+        expect(4).to.be.equals(o.suma(2, 2))
+        expect(o.suma).to.be.called
+        expect(o.suma).to.be.calledWith(2, 2)
+        expect(o.suma).to.have.returned(4)
+        expect(o.suma.callCount).to.be.equal(1)
+      })
+      it('Espiar un objeto', () => {
+        cy.visit('/compras', {
+          onBeforeLoad(win) {
+            cy.spy(win, 'fetch').as('winSpy')
+          },
+        })
+        cy.window().its('fetch').should('be.calledWith', 'api/peliculas?_sort=titulo')
+        // cy.get('@winSpy').should('be.calledWith', 'api/peliculas?_sort=titulo' )
+      })
     })
+    context('Stubs', () => {
+      it('Sustituir metodo con valor de retorno ', () => {
+        let o = new calc();
+        expect(4).to.be.equals(o.suma(2, 2))
+        let sumaStub = cy.stub(o, 'suma')
+        sumaStub.returns(5)
+        o.resta = cy.stub().returns(1)
+        expect(5).to.be.equals(o.suma(2, 2))
+        expect(o.suma).to.be.called
+        expect(1).to.be.equals(o.resta(2, 2))
+      })
+      it('Reemplazar un método con una función', () => {
+        let o = new calc();
+        cy.stub(o, 'suma').callsFake((a, b) => 0)
+        expect(0).to.be.equals(o.suma(2, 2))
+      })
+      it('Reemplazar un método con una función o el original', () => {
+        let o = new calc();
+        let sumaStub = cy.stub(o, 'suma')
+        sumaStub
+          .withArgs(2, 2).returns(5)
+          .withArgs(2, 1).returns(2)
+        sumaStub.callsFake(sumaStub.wrappedMethod)
+        expect(5).to.be.equals(o.suma(2, 2))
+        expect(2).to.be.equals(o.suma(2, 1))
+        expect(3).to.be.equals(o.suma(1, 2))
+        expect(6).to.be.equals(o.suma(4, 2))
+        // cy.log(sumaStub)
+        // cy.debug()
+        // expect(0).to.be.equals(sumaStub.StubwrappedMethod)
+      })
 
-    it('cy.spy() retries until assertions pass', () => {
-      cy.visit('https://example.cypress.io/commands/spies-stubs-clocks')
-
-      const obj = {
-        /**
-         * Prints the argument passed
-         * @param x {any}
-        */
-        foo(x) {
-          console.log('obj.foo called with', x)
-        },
-      }
-
-      cy.spy(obj, 'foo').as('foo')
-
-      setTimeout(() => {
-        obj.foo('first')
-      }, 500)
-
-      setTimeout(() => {
-        obj.foo('second')
-      }, 2500)
-
-      cy.get('@foo').should('have.been.calledTwice')
+      it('Sustituir metodo por argumentos', () => {
+        let o = new calc();
+        expect(4).to.be.equals(o.suma(2, 2))
+        let sumaStub = cy.stub(o, 'suma')
+        sumaStub
+          .withArgs(2, 2).returns(5)
+          .withArgs(2, 1).returns(0);
+        expect(5).to.be.equals(o.suma(2, 2))
+        expect(0).to.be.equals(o.suma(2, 1))
+        expect(o.suma(1, 2)).not.exist
+        sumaStub.returns(11)
+        expect(11).to.be.equals(o.suma(1, 2))
+      })
+      it('Sustituir metodo por llamada', () => {
+        let o = new calc();
+        let sumaStub = cy.stub(o, 'suma')
+        sumaStub.withArgs(2, 2)
+          .onFirstCall().returns(1)
+          .onSecondCall().returns(2)
+          .onCall(3).returns(4);
+        sumaStub.returns(0);
+        expect(1).to.be.equals(o.suma(2, 2))
+        expect(0).to.be.equals(o.suma(1, 2))
+        expect(2).to.be.equals(o.suma(2, 2))
+        expect(0).to.be.equals(o.suma(2, 1))
+        expect(o.suma(2, 2)).not.exist
+        expect(4).to.be.equals(o.suma(2, 2))
+      })
+      it('Reemplace los métodos de Window', () => {
+        cy.visit('/alertas', {
+          onBeforeLoad(win) {
+            cy.stub(win, 'prompt').returns('Hola mundo').as('fakePrompt')
+          },
+        })
+        cy.get('#btnPrompt').click()
+        cy.window().its('prompt').should('be.called')
+        cy.get('#CuadroAlerta').contains('Hola mundo')
+      })
+      it('Reemplace fetch OK', () => {
+        cy.visit('/compras', {
+          onBeforeLoad(win) {
+            cy.stub(win, 'fetch').withArgs('api/peliculas?_sort=titulo')
+              .resolves({
+                ok: true,
+                json: () => Promise.resolve([
+                  {
+                    "id": 99,
+                    "titulo": "Innocent Affair, An (Don't Trust Your Husband) (Under Suspicion)",
+                    "director": "Dorine Haverty",
+                    "duración": 99,
+                    "genero": "Comedy",
+                    "idioma": "French",
+                    "precio": 9.95,
+                    "año": 2001
+                  },
+                  {
+                    "id": 100,
+                    "titulo": "Damn the Defiant! (H.M.S. Defiant)",
+                    "director": "Hillary Baudi",
+                    "duración": 151,
+                    "genero": "Adventure|Drama",
+                    "idioma": "Italian",
+                    "precio": 20,
+                    "año": 2006
+                  }
+                ]),
+              })
+          },
+        })
+        cy.get('#filtroResult').children('li').should('have.length', 2)
+      })
+      it('Reemplace fetch KO 404', () => {
+        cy.visit('/compras', {
+          onBeforeLoad(win) {
+            cy.stub(win, 'fetch').withArgs('api/peliculas?_sort=titulo')
+              .resolves({
+                ok: false,
+                status: 404,
+                statusText: 'Not found',
+                json: () => Promise.resolve({ message: 'Error forzado' }),
+              })
+          },
+        })
+        cy.get('#CuadroAlerta').should('be.visible')
+      })
+      it('Reemplace fetch KO data', () => {
+        cy.visit('/compras', {
+          onBeforeLoad(win) {
+            cy.stub(win, 'fetch').withArgs('api/peliculas?_sort=titulo')
+              .resolves({
+                ok: true,
+                json: () => Promise.reject(new Error('Esto no es JSON')),
+              })
+          },
+        })
+        cy.get('#CuadroAlerta').should('be.visible')
+      })
     })
+    context('Clock', () => {
+      it('cy.clock()', () => {
+        const now = new Date(Date.UTC(2017, 2, 14)).getTime()
+        cy.clock(new Date(Date.UTC(2031, 3, 14)).getTime())
+        cy.visit('/alertas')
+        cy.tick(0)
+        cy.get('#currentDate').should('have.text', '2031-04-14T00:00:00.000Z')
+      })
 
-    it('cy.stub() - create a stub and/or replace a function with stub', () => {
-      // https://on.cypress.io/stub
-      cy.visit('https://example.cypress.io/commands/spies-stubs-clocks')
-
-      const obj = {
-        /**
-         * prints both arguments to the console
-         * @param a {string}
-         * @param b {string}
-        */
-        foo(a, b) {
-          console.log('a', a, 'b', b)
-        },
-      }
-
-      const stub = cy.stub(obj, 'foo').as('foo')
-
-      obj.foo('foo', 'bar')
-
-      expect(stub).to.be.called
-    })
-
-    it('cy.clock() - control time in the browser', () => {
-      // https://on.cypress.io/clock
-
-      // create the date in UTC so its always the same
-      // no matter what local timezone the browser is running in
-      const now = new Date(Date.UTC(2017, 2, 14)).getTime()
-
-      cy.clock(now)
-      cy.visit('https://example.cypress.io/commands/spies-stubs-clocks')
-      cy.get('#clock-div').click()
-        .should('have.text', '1489449600')
-    })
-
-    it('cy.tick() - move time in the browser', () => {
-      // https://on.cypress.io/tick
-
-      // create the date in UTC so its always the same
-      // no matter what local timezone the browser is running in
-      const now = new Date(Date.UTC(2017, 2, 14)).getTime()
-
-      cy.clock(now)
-      cy.visit('https://example.cypress.io/commands/spies-stubs-clocks')
-      cy.get('#tick-div').click()
-        .should('have.text', '1489449600')
-
-      cy.tick(10000) // 10 seconds passed
-      cy.get('#tick-div').click()
-        .should('have.text', '1489449610')
-    })
-
-    it('cy.stub() matches depending on arguments', () => {
-      // see all possible matchers at
-      // https://sinonjs.org/releases/latest/matchers/
-      const greeter = {
-        /**
-         * Greets a person
-         * @param {string} name
-        */
-        greet(name) {
-          return `Hello, ${name}!`
-        },
-      }
-
-      cy.stub(greeter, 'greet')
-        .callThrough() // if you want non-matched calls to call the real method
-        .withArgs(Cypress.sinon.match.string).returns('Hi')
-        .withArgs(Cypress.sinon.match.number).throws(new Error('Invalid name'))
-
-      expect(greeter.greet('World')).to.equal('Hi')
-      // @ts-ignore
-      expect(() => greeter.greet(42)).to.throw('Invalid name')
-      expect(greeter.greet).to.have.been.calledTwice
-
-      // non-matched calls goes the actual method
-      // @ts-ignore
-      expect(greeter.greet()).to.equal('Hello, undefined!')
-    })
-
-    it('matches call arguments using Sinon matchers', () => {
-      // see all possible matchers at
-      // https://sinonjs.org/releases/latest/matchers/
-      const calculator = {
-        /**
-         * returns the sum of two arguments
-         * @param a {number}
-         * @param b {number}
-        */
-        add(a, b) {
-          return a + b
-        },
-      }
-
-      const spy = cy.spy(calculator, 'add').as('add')
-
-      expect(calculator.add(2, 3)).to.equal(5)
-
-      // if we want to assert the exact values used during the call
-      expect(spy).to.be.calledWith(2, 3)
-
-      // let's confirm "add" method was called with two numbers
-      expect(spy).to.be.calledWith(Cypress.sinon.match.number, Cypress.sinon.match.number)
-
-      // alternatively, provide the value to match
-      expect(spy).to.be.calledWith(Cypress.sinon.match(2), Cypress.sinon.match(3))
-
-      // match any value
-      expect(spy).to.be.calledWith(Cypress.sinon.match.any, 3)
-
-      // match any value from a list
-      expect(spy).to.be.calledWith(Cypress.sinon.match.in([1, 2, 3]), 3)
-
-      /**
-       * Returns true if the given number is event
-       * @param {number} x
-       */
-      const isEven = (x) => x % 2 === 0
-
-      // expect the value to pass a custom predicate function
-      // the second argument to "sinon.match(predicate, message)" is
-      // shown if the predicate does not pass and assertion fails
-      expect(spy).to.be.calledWith(Cypress.sinon.match(isEven, 'isEven'), 3)
-
-      /**
-       * Returns a function that checks if a given number is larger than the limit
-       * @param {number} limit
-       * @returns {(x: number) => boolean}
-       */
-      const isGreaterThan = (limit) => (x) => x > limit
-
-      /**
-       * Returns a function that checks if a given number is less than the limit
-       * @param {number} limit
-       * @returns {(x: number) => boolean}
-       */
-      const isLessThan = (limit) => (x) => x < limit
-
-      // you can combine several matchers using "and", "or"
-      expect(spy).to.be.calledWith(
-        Cypress.sinon.match.number,
-        Cypress.sinon.match(isGreaterThan(2), '> 2').and(Cypress.sinon.match(isLessThan(4), '< 4')),
-      )
-
-      expect(spy).to.be.calledWith(
-        Cypress.sinon.match.number,
-        Cypress.sinon.match(isGreaterThan(200), '> 200').or(Cypress.sinon.match(3)),
-      )
-
-      // matchers can be used from BDD assertions
-      cy.get('@add').should('have.been.calledWith',
-        Cypress.sinon.match.number, Cypress.sinon.match(3))
-
-      // you can alias matchers for shorter test code
-      const { match: M } = Cypress.sinon
-
-      cy.get('@add').should('have.been.calledWith', M.number, M(3))
+      it('cy.tick()', () => {
+        cy.clock()
+        cy.visit('/alertas')
+        cy.tick(1000)
+        cy.get('#crono').should('have.text', '1 seconds')
+        cy.tick(3000)
+        cy.get('#crono').should('have.text', '4 seconds')
+        cy.tick(120000)
+        cy.get('#crono').should('have.text', '124 seconds')
+        cy.get('#currentDate').should('have.text', '1970-01-01T00:02:00.000Z')
+      })
     })
   })
-
 })
 

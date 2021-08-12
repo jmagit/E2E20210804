@@ -49,3 +49,12 @@ Cypress.Commands.overwrite('type', (originalFn, element, text, options) => {
     }
     return originalFn(element, text, options)
 })
+Cypress.Commands.add('login', () => {
+    cy.request('POST', '/api/login?cookie=true', { "name": "admin", "password": "P@$$w0rd" }).as('login')
+    cy.get('@login').its('status').should('eq', 200)
+    cy.getCookie('Authorization').should('exist')
+})
+Cypress.Commands.add('logout', () => {
+    cy.request('GET', '/api/logout')
+    cy.getCookie('Authorization').should('not.exist')
+})

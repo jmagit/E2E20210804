@@ -9,5 +9,7 @@ declare namespace Cypress {
     * @example cy.console('info')
     */
     console(method: string): Chainable<Element>
+    login(): Chainable<Element>
+    logout(): Chainable<Element>
   }
 }

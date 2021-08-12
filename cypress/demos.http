@@ -1,0 +1,56 @@
+get http://localhost:8181/api/peliculas/1
+
+###
+put http://localhost:8181/api/peliculas/1
+Content-Type: application/json
+
+  {
+    "id": 1,
+    "titulo": "Pat Garrett and Billy the Kid",
+    "director": "Johnette Bulle",
+    "duración": 90,
+    "genero": "Western",
+    "idioma": "Spanish",
+    "precio": 9.95,
+    "año": 2003
+  }
+
+###
+
+get http://localhost:8181/api/auth
+
+###
+
+post http://localhost:8181/api/login?cookie=true
+Content-Type: application/json
+
+{ "name": "admin", "password": "P@$$w0rd" }
+
+###
+
+post http://localhost:8181/login
+Content-Type: application/x-www-form-urlencoded
+
+name=admin&password=P@$$w0rd
+
+###
+
+get http://localhost:8181/api/logout
+
+###
+
+get http://localhost:8181/api/contactos
+
+###
+
+delete http://localhost:8181/api/contactos/111
+
+###
+
+post http://localhost:8181/api/contactos
+Content-Type: application/json
+
+{
+  "id": 0,
+  "nombre": "0123"
+}
