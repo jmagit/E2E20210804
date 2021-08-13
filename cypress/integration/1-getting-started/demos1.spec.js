@@ -143,9 +143,10 @@ describe('Solicitudes de red', () => {
       cy.get('input[value=Añadir]').click()
       cy.get('#frmPrincipal').should('be.visible')
 
-      cy.get('#nombre').type('a').trigger('keypress').trigger('change')
+      // cy.get('#nombre').type('a').trigger('keypress').trigger('change')
+      // cy.get('#nombre').trigger('input').focus().invoke('val', 'a').trigger('change').blur()
       // cy.get('#nombre').parent().parent().should('has.class', 'has-error')
-      // cy.get('#err_nombre').should('has.class', 'msg-error')
+      // cy.get('#err_nombre').should('has.class', 'msg-error').pause()
       // cy.get('#nombre').type('12345678901234567890123456789012345678901234567890x').blur()
       cy.get('#id').type('a').trigger('change')
       cy.get('#id').parent().parent().should('has.class', 'has-error')
@@ -159,7 +160,7 @@ describe('Solicitudes de red', () => {
       cy.get('#nombre').clear().type('11111').trigger('change') //.blur()
       cy.get('#apellidos').focus().type('11111').blur()
       // cy.get('#').type('')
-      
+
       cy.get('#btnEnviar').click()
       cy.get('#listado').should('be.visible')
     }
@@ -170,7 +171,7 @@ describe('Solicitudes de red', () => {
       // cy.logout()
       cy.wait('@postREST').its('response.statusCode').should('eq', 201)
     })
-    it.only('Espiar una solicitud POST para borrar', () => {
+    it('Espiar una solicitud POST para borrar', () => {
       cy.login()
       cy.intercept('POST', 'api/contactos').as('postREST')
       añadirContacto()
@@ -483,4 +484,41 @@ describe('Comandos', () => {
     cy.get('#txtUsuario').type('admin')
     cy.get('#txtPassword').type('P@$$w0rd', { sensitive: true })
   })
+})
+
+describe.only('Eventos', () => {
+  it('Capturar fail', () => {
+    Cypress.once('fail', (error, runnable) => {
+      debugger
+      throw error
+    })
+    cy.get('element-that-does-not-exist')
+  })
+  it('Ignora primer fallo', () => {
+    Cypress.once('fail', (error, runnable) => {
+      return false
+    })
+    cy.get('element-that-does-not-exist')
+  })
+  it('Excepciones no controladas', (done) => {
+    cy.on('uncaught:exception', (err, runnable) => {
+      if (err.message.includes('Excepción no controlada'))
+        return false;
+      done(err)
+    })
+    cy.visit('/alertas')
+    cy.get('#btnExcepcion').click()
+    cy.get('#btnAlert').click()
+    cy.wrap({}).then(obj => done())
+  })
+  it('Selecciona resultado de confirms', () => {
+    let rslt = true
+    cy.on('window:confirm', (str) => { return rslt; })
+    cy.visit('/alertas')
+    cy.get('#btnConfirm').then((s) => { rslt = false; return s; }).click()
+    cy.get('#txtResultado').should('be.text', 'Respuesta negativa')
+    cy.get('#btnConfirm').then((s) => { rslt = true; return s; }).click()
+    cy.get('#txtResultado').should('be.text', 'Respuesta positiva')
+  })
+
 })
